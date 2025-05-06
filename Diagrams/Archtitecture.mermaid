@@ -1,0 +1,30 @@
+flowchart TD
+    Client[Client<br>(Web/Mobile)]
+    StaticDist[CloudFront + S3<br>(Static Hosting)]
+    APIGW[API Gateway]
+    UploadLambda[Lambda: UploadHandler]
+    S3Media[S3<br>(Media Bucket)]
+    StepFn{Step Functions}
+    Processor[Lambda: Processor]
+    Rekognition[Rekognition<br>(Custom Labels)]
+    ResultsDB[DynamoDB<br>(Results)]
+    FetchLambda[Lambda: ResultFetcher]
+    SNS[SNS<br>(Notifications)]
+    CW[CloudWatch]
+
+    Client -->|Fetch UI & Assets| StaticDist
+    StaticDist --> Client
+    Client -->|POST /upload| APIGW
+    APIGW --> UploadLambda
+    UploadLambda --> S3Media
+    S3Media -- ObjectCreated --> StepFn
+    StepFn --> Processor
+    Processor --> Rekognition
+    Rekognition --> ResultsDB
+    ResultsDB --> FetchLambda
+    FetchLambda --> APIGW
+    StepFn --> SNS
+    CW -. Logs/Alarms .-> CW
+    CW -.-> UploadLambda
+    CW -.-> Processor
+    CW -.-> FetchLambda
